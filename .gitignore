@@ -1,0 +1,10 @@
+# Obsidian 配置文件
+.obsidian/
+
+# 图片缓存
+*.tmp
+.DS_Store
+Thumbs.db
+
+# 日志文件
+*.log
