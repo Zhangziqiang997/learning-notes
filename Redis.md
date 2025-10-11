@@ -1254,6 +1254,38 @@ Redis 的 Lua 脚本功能允许用户在 Redis 服务器端执行自定义的 L
 
 **lua 本身是不具备原子性的**，但由于 Redis 的命令是单线程执行的，它会把整个 lua 脚本作为一个命令执行，会阻塞其间接受到的其他命令，这就保证了 lua 脚本的原子性。
 
+# 常用命令
+通用
+- `EXISTS key`: 判断一个Key是否存在，存在返回1，否则返回0。    
+- `DEL key [key ...]`: 删除一个或多个Key。    
+- `EXPIRE key seconds`: 为指定的Key设置一个**过期时间**（单位：秒）。这是实现缓存的核心命令。
+List
+- `LPUSH key value [value ...]`: 从列表的**左侧（头部）**推入一个或多个元素。    
+- `RPUSH key value [value ...]`: 从列表的**右侧（尾部）**推入一个或多个元素。    
+- `LPOP key`: 从列表的**左侧（头部）** 弹出一个元素。    
+- `RPOP key`: 从列表的**右侧（尾部）** 弹出一个元素。    
+- `LRANGE key start stop`: 获取列表中指定范围的元素。`LRANGE mylist 0 -1`可以获取所有元素。    
+- `LLEN key`: 获取列表的长度。
+
+Set
+- `SADD key member [member ...]`: 向集合中添加一个或多个成员。    
+- `SREM key member [member ...]`: 从集合中移除一个或多个成员。    
+- `SMEMBERS key`: 获取集合中的所有成员。    
+- `SISMEMBER key member`: 判断一个成员是否存在于集合中。    
+- `SCARD key`: 获取集合的成员数量。    
+- `SINTER key [key ...]`: 求多个集合的**交集**（共同好友）。    
+- `SUNION key [key ...]`: 求多个集合的**并集**。    
+- `SDIFF key [key ...]`: 求多个集合的**差集**。
+ZSet
+- `ZADD key score member [score member ...]`: 添加或更新一个或多个成员及其分数。    
+- `ZREM key member [member ...]`: 移除一个或多个成员。    
+- `ZRANGE key start stop [WITHSCORES]`: 按分数**从小到大**的顺序，返回指定排名范围的成员。    
+- `ZREVRANGE key start stop [WITHSCORES]`: 按分数**从大到小**的顺序，返回指定排名范围的成员（**排行榜常用**）。    
+- `ZRANGEBYSCORE key min max [WITHSCORES]`: 按分数范围返回成员。    
+- `ZSCORE key member`: 获取指定成员的分数。    
+- `ZRANK key member`: 获取指定成员的**升序排名**（从0开始）。   
+- `ZREVRANK key member`: 获取指定成员的**降序排名**（从0开始）。
+
 # Redis 序列化协议
 Redis客户端和服务端之间通信所使用的协议，叫做 **RESP (REdis Serialization Protocol)**，也就是Redis序列化协议。从Redis 2.0开始，它就成为了标准的通信方式。
 

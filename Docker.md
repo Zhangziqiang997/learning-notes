@@ -1,3 +1,6 @@
+# 是什么？
+
+Docker 本质上就是一个将**程序和环境打包并运行**的工具软件。具体点来说就是，它通过 Dockerfile 描述环境和应用程序的依赖关系， docker build 构建镜像， docker pull/push 跟 Docker Registry 交互实现存储和分发镜像，docker run 基于镜像启动容器，基于容器技术运行程序和它对应的环境，从而解决环境依赖导致的各种问题。
 
 # 解决什么问题？
 
@@ -7,15 +10,23 @@
 - **标准化：** Docker 提供了一套标准的打包、运输和运行应用的流程。这使得开发、测试、运维团队可以用同一套标准进行协作，极大地提升了DevOps的效率。
 
 # 镜像和容器有什么区别
+<mark class="hltr-orange">Docker镜像：</mark>Docker 镜像是 Docker 容器的源代码，Docker 镜像用于创建容器。使用build 命令创建镜像
+<mark class="hltr-orange">Docker容器：</mark>Docker 容器包括应用程序及其所有依赖项，作为操作系统的独立进程运行。
 
 - **一句话解释：** 镜像是静态的“**模板**”，容器是动态的“**实例**”。
-- **一个比喻：** 我们用面向对象编程来比喻。**镜像 (Image)** 就像是一个**类 (Class)**，它是一个只读的、定义好的模板。而**容器 (Container)** 则是这个类的一个**实例 (Instance)**，即 `new` 出来的一个对象。你可以用同一个镜像（类）创建出很多个一模一样但相互隔离的容器（实例）。
+- **一个比喻：** 我们用面向对象编程来比喻。**镜像 (Image)** 就像是一个**类 (Class)**，它是一个只读的、定义好的模板。而**容器 (Container)** 则是这个类的一个**实例 (Instance)**，即 `new` 出来的一个对象。<mark class="hltr-red">你可以用同一个镜像（类）创建出很多个一模一样但相互隔离的容器（实例）。</mark>
 
 - **镜像的分层结构 (Layers)：** 这是一个非常重要的技术细节。Docker 镜像是**分层**的。`Dockerfile`（我们下一步会讲）中的每一条指令都会创建一个新的层。这些层是只读的，并且会被缓存。
     - **优点1 (高效构建)：** 如果你修改了 `Dockerfile` 的某一行，Docker 在重新构建镜像时，只会重新构建被修改行及其之后的分层，前面的缓存层会被直接复用，大大加快了构建速度。
     - **优点2 (高效存储与分发)：** 如果多个镜像共享相同的基础层（例如，都基于 `ubuntu:20.04`），那么在磁盘上这部分基础层只需要存储一份。
 
 - **容器的读写层：** 当一个容器从镜像启动时，Docker 会在镜像的最上层添加一个**可读写的“容器层”**。所有对容器的修改（如创建文件、修改配置）都发生在此层。原始的镜像是不会被改变的。这被称为“Copy-on-Write”机制。
+
+# Docker 容器有几种状态？
+- **创建 (Created)**：当你执行 `docker create` 命令时，容器就被创建了。它拥有文件系统、配置和唯一的 ID，但它内部的进程还没有启动，所以它还未真正“活过来”。    
+- **运行中 (Running)**：当你执行 `docker start` 或 `docker run` 命令后，容器内的进程就会启动。这是容器最常见的状态，它正在执行你所设定的任务。    
+- **暂停 (Paused)**：你可以使用 `docker pause` 命令将一个运行中的容器暂停。这个操作会挂起容器内所有进程，但容器本身和其占用的资源（如内存）依然存在。它通常用于调试或临时冻结某个容器。使用 `docker unpause` 可以恢复其运行。    
+- **停止 (Exited)**：当容器内的进程执行完毕并退出，或者你手动执行 `docker stop` 或 `docker kill` 命令后，容器就会进入停止状态。在这个状态下，容器的进程已经终止，但容器本身（包括其文件系统）依然存在。你仍然可以检查它的日志、文件，并可以再次使用 `docker start` 重新启动它。
 
 # Dockerfile
 `Dockerfile` 是一个文本文件，它包含了一系列指令，用于告诉 Docker 引擎如何一步步地构建出一个镜像。
@@ -46,6 +57,7 @@ CMD ["java", "-jar", "my-app.jar"]
 - `CMD` 或 `ENTRYPOINT`：指定容器启动后执行的命令。
 	- **区别**：它们都用于定义容器启动时执行的命令。主要区别在于：`CMD` 提供的命令**可以被 `docker run` 后面的参数覆盖**，它更像是一个‘默认’命令。而 `ENTRYPOINT` 定义的命令**不会被轻易覆盖**，`docker run` 后面的参数会被当作 `ENTRYPOINT` 命令的参数来处理。`ENTRYPOINT` 更适合用于制作‘可执行’的容器。
 - `EXPOSE`：声明镜像中使用的端口，主要作为文档用途，不会实际发布端口。
+- `ONBUILD`：当镜像用作另一个镜像构建的基础时，ONBUILD 指令向镜像添加将在稍后执行的触发指令。如果要构建将用作构建其他镜像的基础的镜像（例如，可以使用特定于用户的配置自定义的应用程序构建环境或守护程序），这将非常有用。
 
 # 多阶段构建 (Multi-stage builds)
 多阶段构建（multi-stage build）主要有以下几个优势：
@@ -70,6 +82,7 @@ CMD ["./myapp"]
 ```
 
 
+# Docker 和 虚拟机的区别
 
 |特性|**容器**|**虚拟机 (VM)**|
 |---|---|---|
@@ -79,223 +92,85 @@ CMD ["./myapp"]
 |**资源消耗**|非常小|较大|
 |**部署效率**|非常高|相对较低|
 
-# Docker网络模式
+**传统虚拟机**自带一个完整操作系统，而**容器**本身不带完整操作系统，容器的基础镜像实际上只包含了操作系统的核心依赖库和配置文件等必要组件。  
 
-## 网络模式类型
-- **bridge模式**：默认网络模式，容器通过docker0网桥进行通信
-- **host模式**：容器与宿主机共享网络命名空间，性能较好但隔离性差
-- **none模式**：容器没有网络接口，完全隔离
-- **container模式**：新容器与已存在容器共享网络命名空间
+它利用一个叫 **Namespace** 的能力让它看起来就像是一个独立操作系统一样。再利用一个叫 **Cgroup** 的能力限制它能使用的计算资源。
 
-## 端口映射
-```bash
-# 将容器端口映射到宿主机
-docker run -p 8080:80 nginx  # 宿主机8080映射到容器80端口
-docker run -P nginx           # 随机映射容器暴露的端口
-```
+容器本质上只是个自带独立运行环境的**特殊进程**，底层用的其实是**宿主机的操作系统内核**。
 
-## 容器间通信
-- **同一网络下的容器**：可以通过容器名直接通信
-- **不同网络下的容器**：需要通过端口映射或创建自定义网络
+# Docker Compose 是什么？
 
-# Docker数据管理
+我们现在知道了 Docker 容器 本身只是**一个**特殊进程，但如果我想要部署**多个**容器，且对这些容器的顺序有一定要求呢？比如一个博客系统，当然是先启动数据库，再启动身份验证服务，最后才能启动博客 web 服务。  
 
-## 数据卷(Volume)
-```bash
-# 创建数据卷
-docker volume create my-volume
-# 挂载数据卷
-docker run -v my-volume:/data nginx
-```
+按理说挨个执行 docker run 命令当然是没问题的，但有没有更优雅的解决方案？  
+有。我们可以通过一个 **YAML** （docker-compose.yml）文件写清楚要部署的**容器有哪些**，**部署顺序**是怎么样的，以及这些容器占用的 **cpu 和内存**等信息。
 
-## 绑定挂载(Bind Mount)
-```bash
-# 将宿主机目录挂载到容器
-docker run -v /host/path:/container/path nginx
-```
+可以一键启动整个应用。
 
-## tmpfs挂载
-```bash
-# 内存临时存储
-docker run --tmpfs /tmp nginx
-```
+在 CI/CD 管道中，Compose 配合 Jenkins、GitLab CI 这样的平台，可以自动化测试和部署过程。你可以在构建阶段启动一组服务，测试完成后自动清理环境。
 
-# Docker Compose
+例：<mark class="hltr-red">docker-compose.yml</mark>
+``` YAML
+version: '3.8' # 定义Compose 文件的版本
 
-## 核心概念
-- **服务(Service)**：一个应用的容器，可以包含多个相同镜像的容器实例
-- **项目(Project)**：由一组关联的应用容器组成的一个完整业务单元
-
-## docker-compose.yml示例
-```yaml
-version: '3.8'
-services:
+services: # 这是 Compose 文件的核心部分。在这里，我们定义了应用的所有服务，每个服务都会被 Compose 创建为一个独立的容器。在这个例子中，我们定义了三个服务：`web`、`redis` 和 `db`。
   web:
-    build: .
+    build: . # 这告诉 Docker Compose，`web` 容器的镜像需要从当前目录下的`Dockerfile` 构建。这是一个非常常见的做法，用于构建自定义应用镜像。
     ports:
-      - "5000:5000"
-    depends_on:
-      - redis
+      - "8000:8000" # 端口映射。将宿主机上的 `8000` 端口映射到容器内的 `8000` 端口。这样，我们就可以通过 `http://localhost:8000` 访问到容器中的 Web 应用。
+    volumes:    # 行了卷（Volume）的挂载。将宿主机当前目录下的代码挂载到容器内的 `/app` 目录。
+      - .:/app  #这样做的好处是，你在本地修改代码后，容器内的代码也会同步更新，非常适合开发和调试。
+    depends_on: # 这定义了服务的依赖关系。它告诉 Docker Compose，在启动 `web` 服务之前，
+      - redis   # 必须先启动 `redis` 和 `db` 这两个服务。这能确保应用启动的顺序正确。
+      - db
+    networks:
+      - my_network
+
   redis:
-    image: redis:alpine
+    image: redis:6.2-alpine
+    networks:
+      - my_network
+
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: "mydatabase"
+      POSTGRES_USER: "myuser"
+      POSTGRES_PASSWORD: "mypassword"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - my_network
+
+networks:
+  my_network:
+    driver: bridge
+
+volumes:
+  db_data:
 ```
 
-## 常用命令
-```bash
-docker-compose up -d     # 后台启动所有服务
-docker-compose down      # 停止并删除容器、网络
-docker-compose logs web  # 查看服务日志
-docker-compose scale web=3 # 扩容web服务到3个实例
-```
+# 在 CI/CD 管道中，Compose 配合 Jenkins
+在 CI/CD（**持续集成与持续部署**） 管道中，Compose 配合 Jenkins、GitLab CI 这样的平台，可以自动化测试和部署过程。你可以在构建阶段启动一组服务，测试完成后自动清理环境。
 
-# Docker在K8S中的角色
+解释：
+我们可以用 Docker Compose 来创建和管理一个“一次性”的测试环境，并把它整合到我们的自动化构建和部署流程中去。
+想象一下，你的 CI/CD 管道（比如 Jenkins 或 GitLab CI）就像一个自动化的工厂流水线。当一个开发者提交了新的代码，流水线就开始工作。
+- **没有 Compose 的情况：** 你的流水线可能需要手动安装数据库、配置环境变量、启动服务，这不仅步骤繁琐，而且每次运行都可能因为环境不一致而失败。
+- **有了 Compose 的情况：** 你只需要在流水线中执行一条简单的命令，比如 `docker-compose up`，Compose 就会根据你提前写好的 `docker-compose.yml` 文件，自动地、快速地创建出包含数据库、后端服务、缓存等在内的完整测试环境。
 
-## 容器运行时接口(CRI)
-- Docker通过dockershim与K8S集成（已逐步淘汰）
-- 现代K8S推荐使用containerd、CRI-O等轻量级运行时
+# 容器编排
+- Docker 解决的是一个容器的部署。 
+- Docker Compose 解决的是多个容器组成的一整套服务的部署。
+- <mark class="hltr-red">Docker的容器编排？ —— Docker Swarm 、 K8s</mark>
 
-## 镜像规范
-- K8S使用OCI标准镜像格式
-- Docker镜像是K8S Pod运行的基础
+容器编排是一个自动化和管理容器生命周期的过程，包括部署、扩缩容、网络、服务发现和故障恢复，**尤其是在跨多个主机的集群环境中**。
 
-## K8S中的Docker使用
-```yaml
-apiVersion: v1
-kind: Pod
-spec:
-  containers:
-  - name: myapp
-    image: nginx:1.21  # Docker镜像
-    ports:
-    - containerPort: 80
-```
+## 为什么需要容器编排？
 
-# Docker安全
-
-## 安全最佳实践
-- **最小权限原则**：使用非root用户运行容器
-- **镜像安全**：使用官方镜像，定期更新基础镜像
-- **资源限制**：设置CPU、内存限制
-- **网络安全**：使用自定义网络，限制容器间通信
-
-## 安全扫描
-```bash
-# 使用docker scan扫描镜像漏洞
-docker scan my-image:latest
-```
-
-## 安全上下文
-```dockerfile
-# 创建非root用户
-RUN groupadd -r appuser && useradd -r -g appuser appuser
-USER appuser
-```
-
-# Docker与CI/CD集成
-
-## Jenkins集成
-```groovy
-pipeline {
-    agent any
-    stages {
-        stage('Build') {
-            steps {
-                script {
-                    def image = docker.build("myapp:${env.BUILD_ID}")
-                }
-            }
-        }
-        stage('Test') {
-            steps {
-                script {
-                    docker.image("myapp:${env.BUILD_ID}").inside {
-                        sh 'npm test'
-                    }
-                }
-            }
-        }
-        stage('Deploy') {
-            steps {
-                script {
-                    docker.image("myapp:${env.BUILD_ID}").push()
-                }
-            }
-        }
-    }
-}
-```
-
-## GitLab CI集成
-```yaml
-stages:
-  - build
-  - test
-  - deploy
-
-build:
-  stage: build
-  script:
-    - docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA .
-    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
-```
-
-## Docker Registry
-- **私有仓库搭建**：使用Docker Registry或Harbor
-- **镜像标签策略**：使用Git commit SHA、时间戳等作为标签
-- **镜像清理策略**：定期清理旧版本镜像
-
-# Docker性能优化
-
-## 镜像优化
-- **减少层数**：合并RUN指令
-- **选择合适的基础镜像**：使用alpine、distroless等轻量级镜像
-- **多阶段构建**：分离构建和运行环境
-
-## 容器优化
-- **资源限制**：合理设置CPU、内存限制
-- **健康检查**：配置HEALTHCHECK指令
-- **日志管理**：配置日志驱动和轮转策略
-
-## 构建缓存优化
-```dockerfile
-# 将不常变化的指令放在前面
-FROM node:14
-COPY package*.json ./
-RUN npm ci --only=production
-COPY . .
-```
-
-# Docker常见问题排查
-
-## 容器启动失败
-```bash
-# 查看容器日志
-docker logs container-name
-# 进入失败容器
-docker run -it --rm image-name /bin/bash
-```
-
-## 镜像构建失败
-```bash
-# 查看构建过程
-docker build --no-cache -t myapp .
-# 调试构建过程
-docker run -it --rm image-name /bin/bash
-```
-
-## 网络问题
-```bash
-# 查看网络配置
-docker network ls
-docker network inspect bridge
-# 测试网络连通性
-docker exec container-name ping target-host
-```
-
-## 性能问题
-```bash
-# 查看容器资源使用
-docker stats
-# 查看容器进程
-docker top container-name
-```
+当你的应用从一台开发机走向成百上千台服务器时，你会面临 Docker Compose 无法解决的问题：
+- **规模与高可用**：如何管理成千上万个容器？如何确保当某个容器或服务器宕机时，服务能自动恢复？    
+- **调度**：新容器应该被部署到集群中哪台最合适的服务器上？（基于资源、策略等）    
+- **服务发现与负载均衡**：容器是动态创建和销毁的，IP地址会变。客户端如何找到它们？流量如何均匀分发？    
+- **滚动更新与回滚**：如何在不中断服务的情况下，安全地发布新版本？出了问题如何一键回滚？    
+- **秘密与配置管理**：如何安全地管理数据库密码、API密钥等敏感信息，并分发给需要的容器？

@@ -554,20 +554,32 @@ Java 堆内存根据对象生命周期被划分为三部分：
 <mark class="hltr-red">如何监控和调整元空间的大小</mark>
 JVM 提供了 `-XX:MetaspaceSize` 和 `-XX:MaxMetaspaceSize` 的参数来控制元空间的初始和最大大小。如果不设置，元空间会根据需要动态扩展，通常情况下不需要手动调整，但对于特定的大型应用，建议进行调优以避免内存问题。
 
+# String 对象新建
+
+| 代码                | 创建几个对象  | **关键命令/操作**    |
+| ----------------- | ------- | -------------- |
+| String s = "abc"  | 1个（常量池） |                |
+| new String("abc") | 1个或2个   | 可能一个常量池，堆一定有一个 |
+`new String("abc")` 会创建 **1个或2个对象**，取决于字符串常量池中是否已存在 `"abc"`。
+- **若常量池中无 `"abc"`** → 创建 **2个对象**（常量池中的字符串对象 + 堆中的 `String` 对象）
+- **若常量池中已有 `"abc"`** → 创建 **1个对象**（仅堆中的 `String` 对象）
+
+
+
 # 说一下JDK的监控和 线上处理的一些case。
 ### **一、JDK 监控工具概览**
 
-|**工具**|**用途**|**关键命令/操作**|
-|---|---|---|
-|**jps**|查看 Java 进程的 PID 和主类名|jps -l|
-|**jstat**|监控堆内存、类加载、GC 统计等|jstat -gcutil <pid> 1000（每 1 秒输出 GC 统计）|
-|**jstack**|生成线程快照（Dump 线程栈），分析死锁、线程阻塞等|jstack <pid> > thread.log|
-|**jmap**|生成堆内存快照（Heap Dump），分析内存泄漏|jmap -dump:format=b,file=heap.hprof <pid>|
-|**jinfo**|查看或修改 JVM 参数|jinfo -flags <pid>|
-|**jcmd**|多功能命令（生成堆转储、查看线程栈、触发 GC 等）|jcmd <pid> GC.run（触发 Full GC）|
-|**JConsole**|图形化监控堆内存、线程、类、MBean 等|通过jconsole启动|
-|**VisualVM**|功能更强大的图形化工具（支持堆转储分析、线程分析、抽样器等）|通过jvisualvm启动|
-|**Java Flight Recorder (JFR)**|低开销的性能分析工具（记录 CPU、内存、IO 等事件）|jcmd <pid> JFR.start duration=60s filename=recording.jfr|
+| **工具**                         | **用途**                         | **关键命令/操作**                                              |
+| ------------------------------ | ------------------------------ | -------------------------------------------------------- |
+| **jps**                        | 查看 Java 进程的 PID 和主类名           | jps -l                                                   |
+| **jstat**                      | 监控堆内存、类加载、GC 统计等               | jstat -gcutil <pid> 1000（每 1 秒输出 GC 统计）                  |
+| **jstack**                     | 生成线程快照（Dump 线程栈），分析死锁、线程阻塞等    | jstack <pid> > thread.log                                |
+| **jmap**                       | 生成堆内存快照（Heap Dump），分析内存泄漏      | jmap -dump:format=b,file=heap.hprof <pid>                |
+| **jinfo**                      | 查看或修改 JVM 参数                   | jinfo -flags <pid>                                       |
+| **jcmd**                       | 多功能命令（生成堆转储、查看线程栈、触发 GC 等）     | jcmd <pid> GC.run（触发 Full GC）                            |
+| **JConsole**                   | 图形化监控堆内存、线程、类、MBean 等          | 通过jconsole启动                                             |
+| **VisualVM**                   | 功能更强大的图形化工具（支持堆转储分析、线程分析、抽样器等） | 通过jvisualvm启动                                            |
+| **Java Flight Recorder (JFR)** | 低开销的性能分析工具（记录 CPU、内存、IO 等事件）   | jcmd <pid> JFR.start duration=60s filename=recording.jfr |
 
 ---
 
