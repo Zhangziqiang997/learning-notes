@@ -85,7 +85,7 @@ return a + b;
 
 - **泛型出现之前**（Java 5 之前）：
 	所有集合都只能存储 `Object` 类型
-	```Java
+```Java
 // 没有泛型
 List list = new ArrayList();
 list.add("Hello"); // 存入一个字符串

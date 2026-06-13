@@ -27,7 +27,7 @@
     - **高效性**：ZSet 底层使用了**跳跃表（Skiplist）**和**哈希表（Hash Table）**的组合，能够以 O(logn) 的时间复杂度快速地执行插入、更新、查询排名等操作。        
 - **具体实现**：
        - **用户加分**：当一个学员答对题目时，我们使用 `ZINCRBY` 命令来为他的积分加分。这个命令是原子性的，可以保证并发操作的安全性。 
-	    `ZINCRBY leaderboard:today 10 "user_id_1"`    s 阿斯顿    
+	    `ZINCRBY leaderboard:today 10 "user_id_1"`     
 		`ZINCRBY` 这个命令就是 **Z**set **INCR**ement **BY** 的缩写，它被**专门设计**用来对有序集合中某个成员的分数进行增加或减少。
 		和`ZADD`的区别？
 			- `ZINCRBY`  职责单一,“增加/减少分数”
@@ -158,10 +158,13 @@ DEL idempotency:token:b16f261b-8a87-4a7b-a01d-52a1d2f07293
 
 
 -----------------------
-#### 6. 对于商品表百万条数据，使用联合索引+子查询分页方案优化深分页问题，执行耗时从1130ms降低到280ms。
+#### 6. 对于订单表百万条数据，使用联合索引+子查询分页方案优化深分页问题，执行耗时从1130ms降低到280ms。
+
+我们提供给运营人员一个后台，他们可以按创建时间倒序查看订单列表，并且需要支持**任意页码**跳转。
+由于要支持任意页码跳转，不能使用游标分页的方法，转而使用子查询。
 
 有一个 `products` 表，有超过 200 万条数据，主键为 `id`。
-**1. 未优化的深分页 SQL**
+**1. 未优化的深度分页 SQL**
 ```sql
 SELECT id, name, price FROM products ORDER BY create_time DESC LIMIT 100000, 10;
 ```
@@ -193,6 +196,29 @@ SELECT id FROM products ORDER BY create_time DESC LIMIT 100000, 10;
 - 如果 `create_time` 上有索引，子查询的 `ORDER BY` 就会直接利用索引进行排序，**避免了额外的文件排序（`Using filesort`）**，大大提升了查询效率。    
 - 为了更好的性能，你可以创建一个**联合索引**，例如 `(create_time, id)`。    
     - 这样做的好处是，子查询 `SELECT id FROM products ORDER BY create_time DESC LIMIT ...` 可以直接在**索引树**上完成，甚至不需要回表，实现了**索引覆盖**。
+
+<mark class="hltr-red">此外，游标分页：</mark>
+- 索引范围扫描（通过 WHERE 条件直接定位） 
+- 只扫描 M 行（M = 每页大小） 
+- 执行时间恒定，不随页码增加而变慢
+- 前端需要保存游标信息
+- 时间复杂度O(1)，子查询的复杂度O（N）但常数小。
+**面试话术要点**"游标分页的核心思想是将随机访问变为顺序访问。就像读书一样，我们不是通过'第100页'来定位，而是记住'上次读到哪了'。这种方式利用索引的B+树特性，通过范围查询直接定位到数据起始点，避免了不必要的扫描。"
+```sql
+-- 第一页
+SELECT id, name, price, create_time 
+FROM products 
+ORDER BY create_time DESC, id DESC 
+LIMIT 10;
+
+-- 下一页：基于上一页最后一条记录的游标
+SELECT id, name, price, create_time 
+FROM products 
+WHERE create_time < '2023-01-01 10:00:00'  -- 上一页最后记录的create_time
+   OR (create_time = '2023-01-01 10:00:00' AND id < 1000)  -- 处理相同时间的情况
+ORDER BY create_time DESC, id DESC 
+LIMIT 10;
+```
 
 
 #### 7. 开发报表批量导出功能，使用线程池+CompletableFuture+EasyExcel异步批量导出，相比同步方案接口响应耗时从1780ms降低到310ms。
